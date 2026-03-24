@@ -51,4 +51,3 @@ Dado que el ecosistema no usa bibliotecas externas, simplemente requiere de **Py
 
 ## 📌 Autor y Colaboradores
 Pablo Francisco Decena Romero
-Proyecto de aula/universidad para el estudio profundo de la Minería de Datos.
