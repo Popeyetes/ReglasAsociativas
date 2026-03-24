@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minería de Reglas de Asociación</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --card: #1a1a26;
+    --border: #2a2a3e;
+    --accent1: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --lift-high: #22c55e;
+    --lift-neutral: #94a3b8;
+    --lift-low: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Space Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: linear-gradient(90deg, #0a0a0f 0%, #12101f 100%);
+  }
+  .logo {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1.2rem;
+    color: white; flex-shrink: 0;
+  }
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+  header h1 span { color: var(--accent2); }
+  header p { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+
+  .main { display: grid; grid-template-columns: 360px 1fr; min-height: calc(100vh - 89px); }
+
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 2rem;
+    display: flex; flex-direction: column; gap: 1.5rem;
+    overflow-y: auto;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent1); margin-bottom: 0.75rem;
+  }
+  label { font-size: 0.75rem; color: var(--muted); display: block; margin-bottom: 0.4rem; }
+  textarea, input[type=number] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    padding: 0.75rem;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+  textarea:focus, input[type=number]:focus { outline: none; border-color: var(--accent1); }
+  textarea { min-height: 180px; }
+
+  .slider-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+  input[type=range] { flex: 1; accent-color: var(--accent1); }
+  .slider-val {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.2rem 0.5rem; font-size: 0.75rem;
+    min-width: 48px; text-align: center; color: var(--accent2); font-weight: 700;
+  }
+
+  .algo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .algo-grid.algo-3 { grid-template-columns: 1fr 1fr 1fr; }
+  
+  .algo-btn, .view-btn {
+    padding: 0.6rem 0.3rem; border-radius: 8px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--muted);
+    font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .algo-btn.active { border-color: var(--accent1); background: rgba(124,58,237,0.15); color: var(--text); }
+  .algo-btn:hover { border-color: var(--accent1); color: var(--text); }
+  
+  .view-btn.active { border-color: var(--accent2); background: rgba(6,182,212,0.15); color: var(--text); }
+  .view-btn:hover { border-color: var(--accent2); color: var(--text); }
+
+  .examples { display: flex; flex-direction: column; gap: 0.4rem; }
+  .ex-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--muted); font-family: 'Space Mono', monospace; font-size: 0.72rem;
+    padding: 0.4rem 0.7rem; cursor: pointer; text-align: left; transition: all 0.2s;
+  }
+  .ex-btn:hover { border-color: var(--accent3); color: var(--text); }
+
+  .run-btn {
+    width: 100%; padding: 0.9rem; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2)); color: white;
+    font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.03em;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+  }
+  .run-btn:hover { opacity: 0.9; }
+  .run-btn:active { transform: scale(0.98); }
+
+  .content { padding: 2rem; overflow-y: auto; }
+  
+  .log-panel { display: none; flex-direction: column; gap: 1rem; animation: fadeIn 0.3s ease both; }
+  .log-panel.active { display: flex; }
+  .results-panel { display: none; flex-direction: column; animation: fadeIn 0.3s ease both; }
+  .results-panel.active { display: flex; }
+
+  .log-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; font-size: 0.8rem; }
+  .log-title { color: var(--accent2); font-weight: 700; margin-bottom: 0.5rem; border-bottom: 1px dashed var(--border); padding-bottom: 0.4rem; font-family: 'Syne', sans-serif; }
+  .tree-node { margin-left: 1.5rem; border-left: 1px solid rgba(124,58,237,0.3); padding-left: 1rem; position: relative; padding-top: 0.5rem; }
+  .tree-node::before { content: ''; position: absolute; left: 0; top: 1.2rem; width: 0.8rem; height: 1px; background: rgba(124,58,237,0.3); }
+
+  .fp-node-circle {
+    display: inline-flex; justify-content: center; align-items: center;
+    background: var(--surface); border: 2px solid var(--accent1); border-radius: 20px;
+    padding: 0.3rem 0.8rem; font-size: 0.75rem; color: var(--text); font-weight: 700;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  .fp-node-count {
+    background: rgba(124,58,237,0.2); color: #a78bfa; padding: 0.1rem 0.4rem; border-radius: 10px; margin-left: 0.4rem; font-size: 0.65rem;
+  }
+  .tree-root { border-color: var(--accent2); }
+
+  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; }
+  .stat-card .label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .stat-card .value { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--accent2); line-height: 1.2; margin-top: 0.25rem; }
+  .stat-card .sub { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+  .results-header h2 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; }
+  .tag { background: rgba(124,58,237,0.2); border: 1px solid var(--accent1); border-radius: 20px; padding: 0.2rem 0.75rem; font-size: 0.72rem; color: var(--accent1); font-weight: 700; }
+
+  .rule-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 0.75rem; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center; transition: border-color 0.2s; animation: fadeIn 0.3s ease both; }
+  .rule-card:hover { border-color: var(--accent1); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .rule-main { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .items-badge { display: inline-flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+  .item-chip { background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.3); border-radius: 6px; padding: 0.2rem 0.5rem; font-size: 0.8rem; color: var(--accent2); font-weight: 700; }
+  .arrow { font-size: 1.2rem; color: var(--accent1); font-weight: 900; padding: 0 0.25rem; }
+  .item-chip.cons { background: rgba(124,58,237,0.1); border-color: rgba(124,58,237,0.3); color: #a78bfa; }
+
+  .metrics { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; }
+  .metric { text-align: right; }
+  .metric .m-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .metric .m-val { font-size: 0.95rem; font-weight: 700; font-family: 'Syne', sans-serif; }
+  .lift-high { color: var(--lift-high); }
+  .lift-neutral { color: var(--lift-neutral); }
+  .lift-low { color: var(--lift-low); }
+
+  .lift-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 4px; overflow: hidden; }
+  .lift-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+  .explain-box { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent3); border-radius: 8px; padding: 0.75rem 1rem; margin-top: 0.5rem; font-size: 0.75rem; color: var(--muted); line-height: 1.6; }
+  .explain-box strong { color: var(--accent3); }
+
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 4rem; color: var(--muted); font-size: 0.85rem; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent1); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 2rem; text-align: center; gap: 1rem; }
+  .empty .icon { font-size: 3rem; opacity: 0.3; }
+  .empty h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; color: var(--muted); }
+  .empty p { font-size: 0.8rem; color: var(--muted); max-width: 360px; line-height: 1.6; }
+
+  .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); border-radius: 10px; padding: 1.25rem; color: #fca5a5; font-size: 0.85rem; }
+
+  .legend { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .tooltip-anchor { position: relative; cursor: help; }
+  .tooltip-anchor:hover .tooltip-text { display: block; }
+  .tooltip-text { display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.72rem; color: var(--text); white-space: nowrap; z-index: 100; min-width: 200px; text-align: left; line-height: 1.5; }
+
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    .stats-bar { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AR</div>
+  <div>
+    <h1>Minería de Reglas de <span>Asociación</span></h1>
+    <p>A Priori · FP-Growth · ECLAT — Análisis de patrones transaccionales</p>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="sidebar">
+
+    <div>
+      <div class="section-title">📥 Datos de Transacciones</div>
+      <label>Una transacción por línea, ítems separados por coma:</label>
+      <textarea id="txInput" placeholder="Pan, Leche, Huevo&#10;Pan, Mantequilla&#10;Leche, Huevo, Queso&#10;Pan, Leche"></textarea>
+    </div>
+
+    <div>
+      <div class="section-title">🎛️ Parámetros</div>
+      <label>Soporte mínimo</label>
+      <div class="slider-row">
+        <input type="range" id="supSlider" min="0.01" max="1" step="0.01" value="0.3">
+        <span class="slider-val" id="supVal">0.30</span>
+      </div>
+      <label>Confianza mínima</label>
+      <div class="slider-row">
+        <input type="range" id="confSlider" min="0.01" max="1" step="0.01" value="0.5">
+        <span class="slider-val" id="confVal">0.50</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">⚙️ Algoritmo</div>
+      <div class="algo-grid algo-3">
+        <button class="algo-btn active" data-algo="apriori">A Priori</button>
+        <button class="algo-btn" data-algo="fpgrowth">FP-Growth</button>
+        <button class="algo-btn" data-algo="eclat">ECLAT</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">🖥️ Vista</div>
+      <div class="algo-grid">
+        <button class="view-btn active" data-view="results">Resultados</button>
+        <button class="view-btn" data-view="procedure">Procedimiento</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">📚 Ejemplos Rápidos</div>
+      <div class="examples">
+        <button class="ex-btn" data-ex="frutas">🍎 Frutas (ejercicio 1)</button>
+        <button class="ex-btn" data-ex="cafeteria">☕ Cafetería (ejercicio 2)</button>
+        <button class="ex-btn" data-ex="supermercado">🛒 Supermercado</button>
+      </div>
+    </div>
+
+    <button class="run-btn" id="runBtn">▶ Ejecutar Análisis</button>
+
+  </aside>
+
+  <main class="content" id="content">
+    <div id="resultsView" class="results-panel active">
+      <div class="empty">
+        <div class="icon">🔍</div>
+        <h3>Listo para analizar</h3>
+        <p>Ingresa tus transacciones, ajusta los parámetros y selecciona un algoritmo. Haz clic en <strong>Ejecutar Análisis</strong> para descubrir patrones.</p>
+      </div>
+    </div>
+    <div id="procedureView" class="log-panel">
+      <div class="empty">
+        <div class="icon">📘</div>
+        <h3>Modo Procedimiento (Educativo)</h3>
+        <p>Aquí se mostrarán los pasos de ejecución internos del algoritmo, como la generación de candidatos o el desglose del árbol FP-Tree interactivo.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const EXAMPLES = {
+  frutas: `A,B,C\nB,D\nA,C,D,E\nA,D,E\nB,E\nA,B,C,E\nA,B\nC,D,E\nA,B,D\nD,E`,
+  cafeteria: `Café,Pan,Mantequilla\nCafé,Pan\nCafé,Leche\nTé,Galletas\nCafé,Pan,Leche\nTé,Leche\nCafé,Galletas\nCafé,Pan,Mantequilla\nCafé,Leche\nTé,Galletas\nCafé,Pan,Mantequilla\nCafé,Pan\nCafé,Leche\nTé,Galletas\nCafé,Pan,Leche\nTé,Galletas\nCafé,Pan\nCafé,Mantequilla\nTé,Leche\nCafé,Pan,Mantequilla`,
+  supermercado: `Pan,Leche,Huevo\nPan,Mantequilla\nLeche,Huevo,Queso\nPan,Leche\nPan,Huevo,Mantequilla\nLeche,Queso\nPan,Leche,Mantequilla\nHuevo,Queso\nPan,Leche,Huevo,Queso\nMantequilla,Leche`
+};
+
+let selectedAlgo = 'apriori';
+let selectedView = 'results';
+
+['sup','conf'].forEach(id => {
+  const sl = document.getElementById(id+'Slider');
+  const vl = document.getElementById(id+'Val');
+  sl.addEventListener('input', () => vl.textContent = parseFloat(sl.value).toFixed(2));
+});
+
+document.querySelectorAll('.algo-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedAlgo = btn.dataset.algo;
+  });
+});
+
+document.querySelectorAll('.view-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedView = btn.dataset.view;
+    updateViewVisibility();
+  });
+});
+
+function updateViewVisibility() {
+  const rs = document.getElementById('resultsView');
+  const pr = document.getElementById('procedureView');
+  if (selectedView === 'results') {
+    rs.classList.add('active');
+    pr.classList.remove('active');
+  } else {
+    rs.classList.remove('active');
+    pr.classList.add('active');
+  }
+}
+
+document.querySelectorAll('.ex-btn').forEach(btn => {
+  btn.addEventListener('click', () => document.getElementById('txInput').value = EXAMPLES[btn.dataset.ex]);
+});
+
+document.getElementById('runBtn').addEventListener('click', runAnalysis);
+
+async function runAnalysis() {
+  const raw = document.getElementById('txInput').value.trim();
+  if (!raw) { showError('Por favor ingresa al menos una transacción.'); return; }
+
+  const transactions = raw.split('\n').map(l => l.split(',').map(s => s.trim()).filter(Boolean)).filter(t => t.length > 0);
+  if (transactions.length < 2) { showError('Necesitas al menos 2 transacciones.'); return; }
+
+  const support = parseFloat(document.getElementById('supSlider').value);
+  const confidence = parseFloat(document.getElementById('confSlider').value);
+
+  showLoading();
+
+  try {
+    const res = await fetch('/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ transactions, support, confidence, algorithm: selectedAlgo })
+    });
+    const data = await res.json();
+    if (data.error) { showError(data.error); return; }
+    document.getElementById('resultsView').innerHTML = ''; // Limpiar loaders
+    document.getElementById('procedureView').innerHTML = '';
+    renderResults(data, transactions, support, confidence);
+    renderProcedure(data);
+  } catch(e) {
+    showError('Error de conexión con el servidor: ' + e.message);
+  }
+}
+
+function showLoading() {
+  const loader = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>Analizando patrones...</span>
+    </div>`;
+  document.getElementById('resultsView').innerHTML = loader;
+  document.getElementById('procedureView').innerHTML = loader;
+}
+
+function showError(msg) {
+  const err = `<div class="error-box">⚠️ ${msg}</div>`;
+  document.getElementById('resultsView').innerHTML = err;
+  document.getElementById('procedureView').innerHTML = err;
+}
+
+function liftClass(l) { return l > 1.2 ? 'lift-high' : l < 0.8 ? 'lift-low' : 'lift-neutral'; }
+function liftColor(l) { return l > 1.2 ? '#22c55e' : l < 0.8 ? '#ef4444' : '#94a3b8'; }
+function liftInterpret(l) {
+  if (l > 1.5) return '🔥 Asociación muy fuerte';
+  if (l > 1.2) return '✅ Asociación positiva';
+  if (l > 0.9) return '➡️ Independencia';
+  return '⚠️ Efecto negativo';
+}
+function algoName(a) { return {apriori:'A Priori', fpgrowth:'FP-Growth', eclat:'ECLAT'}[a] || a; }
+
+function renderResults(data, transactions, support, confidence) {
+  const rules = data.rules;
+  const algoLabel = algoName(data.algorithm);
+  const allItems = new Set(transactions.flat());
+  const liftMax = rules.length ? Math.max(...rules.map(r => r.lift)) : 1;
+
+  let statsHtml = `
+  <div class="stats-bar">
+    <div class="stat-card"><div class="label">Transacciones</div><div class="value">${transactions.length}</div><div class="sub">${allItems.size} ítems únicos</div></div>
+    <div class="stat-card"><div class="label">Reglas encontradas</div><div class="value">${rules.length}</div><div class="sub">conf ≥ ${confidence.toFixed(2)}, sup ≥ ${support.toFixed(2)}</div></div>
+    <div class="stat-card"><div class="label">Mayor confianza</div><div class="value">${rules.length ? (Math.max(...rules.map(r=>r.confidence))*100).toFixed(0)+'%' : '—'}</div><div class="sub">de las reglas generadas</div></div>
+    <div class="stat-card"><div class="label">Lift máximo</div><div class="value" style="color:var(--lift-high)">${rules.length ? liftMax.toFixed(2) : '—'}</div><div class="sub">mayor fuerza</div></div>
+  </div>`;
+
+  if (rules.length === 0) {
+    document.getElementById('resultsView').innerHTML = statsHtml + `
+      <div class="error-box">No se encontraron reglas con soporte ≥ ${support.toFixed(2)} y confianza ≥ ${confidence.toFixed(2)}.<br>Intenta reducir los umbrales o agregar más transacciones.</div>`;
+    return;
+  }
+
+  let legendHtml = `
+  <div class="results-header"><h2>Reglas de Asociación <span style="color:var(--muted);font-size:0.85rem;margin-left:8px;">— ${algoLabel}</span></h2><span class="tag">${rules.length} reglas</span></div>
+  <div class="legend">
+    <div class="legend-item"><div class="dot" style="background:#22c55e"></div> Lift &gt; 1.2 (asociación positiva)</div>
+    <div class="legend-item"><div class="dot" style="background:#94a3b8"></div> Lift ≈ 1 (independencia)</div>
+    <div class="legend-item"><div class="dot" style="background:#ef4444"></div> Lift &lt; 0.8 (efecto negativo)</div>
+  </div>`;
+
+  let rulesHtml = rules.map((r, idx) => {
+    const ant = r.antecedent.map(i => `<span class="item-chip">${i}</span>`).join(' ');
+    const cons = r.consequent.map(i => `<span class="item-chip cons">${i}</span>`).join(' ');
+    return `
+    <div class="rule-card" style="animation-delay:${idx * 0.04}s">
+      <div>
+        <div class="rule-main">
+          <span style="font-size:0.7rem;color:var(--muted);min-width:20px">#${idx+1}</span>
+          <div class="items-badge">${ant}</div><span class="arrow">⟹</span><div class="items-badge">${cons}</div>
+        </div>
+        <div class="explain-box">
+          Cuando se compra <strong>${r.antecedent.join(' + ')}</strong>, también se compra <strong>${r.consequent.join(' + ')}</strong>
+          en el <strong>${(r.confidence*100).toFixed(1)}%</strong> de los casos.
+          Aparece en <strong>${r.count}</strong> transacciones. ${liftInterpret(r.lift)}.
+          <div style="margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px dashed var(--border);">
+            <div style="color: var(--accent1); font-weight: 700; margin-bottom: 0.4rem; font-size: 0.7rem; text-transform: uppercase;">Cálculo:</div>
+            • <strong>Soporte:</strong> freq({${r.antecedent.concat(r.consequent).join(', ')}}) / N = ${r.count} / ${r.total_transactions} = ${(r.support).toFixed(4)}<br>
+            • <strong>Confianza:</strong> freq({${r.antecedent.concat(r.consequent).join(', ')}}) / freq({${r.antecedent.join(', ')}}) = ${r.count} / ${r.ant_count} = ${(r.confidence).toFixed(4)}<br>
+            • <strong>Lift:</strong> Confianza / Soporte({${r.consequent.join(', ')}}) = ${(r.confidence).toFixed(4)} / (${r.cons_count} / ${r.total_transactions}) = ${(r.lift).toFixed(4)}
+          </div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric tooltip-anchor"><div class="m-label">Soporte</div><div class="m-val" style="color:var(--accent2)">${(r.support*100).toFixed(1)}%</div></div>
+        <div class="metric tooltip-anchor"><div class="m-label">Confianza</div><div class="m-val" style="color:#a78bfa">${(r.confidence*100).toFixed(1)}%</div></div>
+        <div class="metric tooltip-anchor">
+          <div class="m-label">Lift</div><div class="m-val ${liftClass(r.lift)}">${r.lift.toFixed(3)}</div>
+          <div class="lift-bar"><div class="lift-bar-fill" style="width:${Math.min(100, (r.lift / (liftMax || 1)) * 100)}%;background:${liftColor(r.lift)}"></div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('resultsView').innerHTML = statsHtml + legendHtml + rulesHtml;
+}
+
+function renderTree(node) {
+  if (!node) return '';
+  const isRoot = node.name === 'Root';
+  let html = `<div class="tree-node">
+                <div class="fp-node-circle ${isRoot ? 'tree-root' : ''}">
+                  ${node.name}
+                  ${!isRoot ? `<span class="fp-node-count">${node.count}</span>` : ''}
+                </div>`;
+  if (node.children && node.children.length > 0) {
+    node.children.forEach(child => {
+      html += renderTree(child);
+    });
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderProcedure(data) {
+  const pr = document.getElementById('procedureView');
+  let html = `<div class="results-header"><h2>Procedimiento de Búsqueda <span style="color:var(--muted);font-size:0.85rem;margin-left:8px;">— ${algoName(data.algorithm)}</span></h2></div>`;
+  
+  if (!data.logs || data.logs.length === 0) {
+    pr.innerHTML = html + `<div class="error-box">No se generaron logs para este algoritmo.</div>`;
+    return;
+  }
+
+  let fpgrowthTableRows = [];
+  let freqItemsSorted = null;
+
+  data.logs.forEach(log => {
+    if (log.action === "mine_table_row") {
+      fpgrowthTableRows.push(log);
+      return;
+    }
+    if (log.action === "frequent_items_sorted") {
+      freqItemsSorted = log.items;
+      return;
+    }
+    
+    html += `<div class="log-box">`;
+    if (log.action === "initial_tree") {
+      html += `<div class="log-title">Construcción del FP-Tree Inicial</div>`;
+      html += renderTree(log.tree);
+    } else if (log.action.startsWith("K=")) {
+      html += `<div class="log-title">Paso: Generación de itemsets de tamaño ${log.action.split('=')[1]}</div>`;
+      if (log.min_required !== undefined) {
+          html += `<p style="margin-bottom: 0.8rem; font-size: 0.75rem;">Se requiere un conteo mínimo de <strong style="color:var(--accent1)">${Math.ceil(log.min_required)}</strong> apariciones para no ser descartado:</p>`;
+          html += `<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">`;
+          let passedCount = 0;
+          log.candidates.forEach(cand => {
+              if (cand.passed) passedCount++;
+              const itemStr = cand.itemset.join(', ');
+              const colorClass = cand.passed ? 'border-color: #22c55e; background: rgba(34, 197, 94, 0.1); color: #22c55e;' : 'border-color: #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; opacity: 0.6;';
+              const icon = cand.passed ? '✓' : '✗';
+              html += `<div title="Apariciones: ${cand.count}" style="border: 1px solid transparent; ${colorClass} border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.75rem; font-family: 'Space Mono', monospace; display: flex; align-items: center; gap: 0.4rem;">`;
+              html += `<span>{${itemStr}}</span>`;
+              html += `<span style="background: rgba(255,255,255,0.15); padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: bold;">${cand.count}</span>`;
+              html += `<span>${icon}</span>`;
+              html += `</div>`;
+          });
+          html += `</div>`;
+          const discardedCount = log.candidates.length - passedCount;
+          html += `<div style="margin-top: 0.8rem; font-size: 0.72rem; color: var(--muted);">Resumen iteración: <strong style="color:var(--accent2)">${passedCount}</strong> sobrevivieron (frecuentes), <strong style="color:var(--lift-low)">${discardedCount}</strong> fueron descartados.</div>`;
+      } else {
+        if (log.candidates !== undefined) html += `<div>Candidatos evaluados: ${log.candidates}</div>`;
+        if (log.frequent !== undefined) html += `<div>Itemsets frecuentes confirmados: <strong style="color:var(--accent1)">${log.frequent}</strong></div>`;
+      }
+    } else if (log.action.startsWith("Intersect")) {
+      html += `<div class="log-title">${log.action}</div>`;
+      html += `<div>Itemsets frecuentes encontrados mediante intersección de TIDs: <strong style="color:var(--accent1)">${log.frequent_found}</strong></div>`;
+    } else {
+      html += `<div>${JSON.stringify(log)}</div>`;
+    }
+    html += `</div>`;
+  });
+
+  if (fpgrowthTableRows.length > 0) {
+    html += `<div class="log-box" style="margin-top: 1rem;">`;
+    
+    if (freqItemsSorted) {
+      html += `<div class="log-title">Ítems Frecuentes Iniciales Ordenados</div>`;
+      html += `<div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem;">`;
+      freqItemsSorted.forEach(([item, count]) => {
+        html += `<div title="Frecuencia: ${count}" style="border: 1px solid #8b5cf6; background: rgba(139, 92, 246, 0.15); color: #a78bfa; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.75rem; font-family: 'Space Mono', monospace; display: flex; align-items: center; gap: 0.4rem;">`;
+        html += `<span>{${item}}</span>`;
+        html += `<span style="background: rgba(255,255,255,0.15); padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: bold; color: white;">${count}</span>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+      html += `<div class="log-title">Tabla de Extracción de Patrones (Mining Table)</div>`;
+    } else {
+      html += `<div class="log-title">Tabla de Extracción de Patrones (Mining Table)</div>`;
+    }
+    
+    html += `<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; margin-top: 1rem;">`;
+    html += `<tr style="background: rgba(255,255,255,0.05); border-bottom: 2px solid var(--border);">
+               <th style="padding: 0.75rem;">Finalizan con</th>
+               <th style="padding: 0.75rem;">Ruta</th>
+               <th style="padding: 0.75rem; text-align: center;">Conteo de Items en las rutas</th>
+               <th style="padding: 0.75rem;">Conjunto de Items candidatos</th>
+               <th style="padding: 0.75rem;">Conjuntos frecuentes</th>
+             </tr>`;
+             
+    fpgrowthTableRows.forEach(row => {
+      let rutasStr = row.cpb.map(c => `{${c.path.join(', ')}}`).join('<br>');
+      let conteoStr = row.cpb.map(c => c.count).join('<br>');
+      if (!rutasStr) { rutasStr = '<span style="color:var(--muted)">-</span>'; conteoStr = '-'; }
+      
+      let candStr = Object.entries(row.candidates || {}).map(([k, v]) => `⟨${k}: ${v}⟩`).join(', ');
+      if (!candStr) candStr = '<span style="color:var(--muted)">-</span>';
+
+      let freqStr = Object.entries(row.frequent || {}).map(([k, v]) => `⟨${k}: ${v}⟩`).join(', ');
+      if (!freqStr) freqStr = '<span style="color:var(--muted)">-</span>';
+      
+      html += `<tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 0.75rem; font-weight: bold; color: var(--accent2);">${row.item}</td>
+                <td style="padding: 0.75rem; font-family: 'Space Mono', monospace;">${rutasStr}</td>
+                <td style="padding: 0.75rem; text-align: center; font-family: 'Space Mono', monospace; font-weight: bold;">${conteoStr}</td>
+                <td style="padding: 0.75rem;">${candStr}</td>
+                <td style="padding: 0.75rem; color: var(--accent1); font-weight: bold;">${freqStr}</td>
+               </tr>`;
+    });
+    html += `</table></div></div>`;
+  }
+
+  pr.innerHTML = html;
+}
+</script>
+</body>
+</html>
