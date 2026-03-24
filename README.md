@@ -12,7 +12,7 @@ La aplicación implementa los 3 algoritmos fundamentales de minería de itemsets
 ### Modos de Visualización (UI Dual)
 La interfaz gráfica cuenta con dos modalidades en tiempo real:
 - **Modo Resultados:** Enfocado al usuario analítico. Genera directamente las Reglas de Asociación finales, detallando el cálculo exacto de métricas clave: *Soporte*, *Confianza* y *Lift*.
-- **Modo Procedimiento (Didáctico):** Enfocado a estudiantes. Desglosa paso a paso el esqueleto matemático interno de cada algoritmo de manera visual:
+- **Modo Procedimiento (Didáctico):** Desglosa paso a paso el esqueleto matemático interno de cada algoritmo de manera visual:
   - Generación, conteo y filtro iterativo de candidatos (con código de colores ✓/✗).
   - Representación visual del *FP-Tree Inicial* dibujado mediante nodos estilizados.
   - Tabla relacional exacta de Extracción de Patrones Condicionales (Minería).
@@ -41,7 +41,7 @@ Dado que el ecosistema no usa bibliotecas externas, simplemente requiere de **Py
 1. Abre tu terminal.
 2. Navega al directorio del proyecto:
    ```bash
-   cd "ruta/hacia/Reglas asociativas"
+   cd "/Reglas asociativas"
    ```
 3. Inicia el servidor nativo de Python:
    ```bash
@@ -50,4 +50,5 @@ Dado que el ecosistema no usa bibliotecas externas, simplemente requiere de **Py
 4. Abre tu navegador de preferencia y visita: [http://localhost:8765](http://localhost:8765)
 
 ## 📌 Autor y Colaboradores
+Pablo Francisco Decena Romero
 Proyecto de aula/universidad para el estudio profundo de la Minería de Datos.
