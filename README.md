@@ -41,7 +41,7 @@ Dado que el ecosistema no usa bibliotecas externas, simplemente requiere de **Py
 1. Abre tu terminal.
 2. Navega al directorio del proyecto:
    ```bash
-   cd "/Reglas asociativas"
+   cd "/ReglasAsociativas"
    ```
 3. Inicia el servidor nativo de Python:
    ```bash
